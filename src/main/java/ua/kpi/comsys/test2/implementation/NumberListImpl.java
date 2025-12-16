@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2014, NTUU KPI, Computer systems department and/or its affiliates. All rights reserved.
  * NTUU KPI PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
- *
- *
  */
 
 package ua.kpi.comsys.test2.implementation;
@@ -12,316 +10,468 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.math.BigInteger;
 
 import ua.kpi.comsys.test2.NumberList;
 
 /**
- * Custom implementation of INumberList interface.
- * Has to be implemented by each student independently.
- *
- * @author Alexander Podrubailo
- *
- */
+     * @author Anastasia Samoilenko
+     * @group IA-33
+     * @variant 19
+     */
+
 public class NumberListImpl implements NumberList {
+    
+   private static final int MAIN_BASE = 16;
+   private static final int ADDITIONAL_BASE = 2;
+   private int base = MAIN_BASE;
+    
+   private static class Node {
+        Byte value;
+        Node next;
 
-    /**
-     * Default constructor. Returns empty <tt>NumberListImpl</tt>
-     */
+        Node(Byte value) {
+            this.value = value;
+        }
+    } 
+    
+    private Node head;
+    private int size;
+    
     public NumberListImpl() {
-        // TODO Auto-generated method stub
+        head = null;
+        size = 0;
     }
-
-
-    /**
-     * Constructs new <tt>NumberListImpl</tt> by <b>decimal</b> number
-     * from file, defined in string format.
-     *
-     * @param file - file where number is stored.
-     */
+    
     public NumberListImpl(File file) {
-        // TODO Auto-generated method stub
+       this();
+        String line = null;
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            line = br.readLine();
+            if (line == null) {
+                return; 
+            }
+            
+            BigInteger number = new BigInteger(line.trim());
+            
+            if (number.compareTo(BigInteger.ZERO) < 0) {
+                 return; 
+            }
+            
+            fromDecimalBigInteger(number, MAIN_BASE);
+        } catch (IOException e) {
+            return;
+        } catch (NumberFormatException e) {
+            return;
+        }   
     }
 
-
-    /**
-     * Constructs new <tt>NumberListImpl</tt> by <b>decimal</b> number
-     * in string notation.
-     *
-     * @param value - number in string notation.
-     */
     public NumberListImpl(String value) {
-        // TODO Auto-generated method stub
+       this();
+        try {
+            BigInteger number = new BigInteger(value);
+            if (number.compareTo(BigInteger.ZERO) < 0) {
+                return; 
+            }
+            fromDecimalBigInteger(number, MAIN_BASE);
+        } catch (NumberFormatException e) {
+             return; 
+        }
     }
 
 
-    /**
-     * Saves the number, stored in the list, into specified file
-     * in <b>decimal</b> scale of notation.
-     *
-     * @param file - file where number has to be stored.
-     */
+    private void fromDecimalBigInteger(BigInteger value, int base) {
+        clear();
+        this.base = base;
+        BigInteger baseBI = BigInteger.valueOf(base);
+
+        if (value.equals(BigInteger.ZERO)) {
+            add((byte) 0);
+            return;
+        }
+
+        BigInteger zero = BigInteger.ZERO;
+        while (value.compareTo(zero) > 0) {
+            BigInteger remainder = value.remainder(baseBI);
+            value = value.divide(baseBI);
+
+            add(0, remainder.byteValue()); 
+    }
+}
+
+    private BigInteger toDecimalBigInteger() {
+    
+    if (head == null) {
+        return BigInteger.ZERO;
+    }
+
+    BigInteger result = BigInteger.ZERO;
+    BigInteger baseBI = BigInteger.valueOf(this.base); 
+    Node current = head; 
+
+    for (int i = 0; i < size; i++) {
+        BigInteger digit = BigInteger.valueOf(current.value);
+        
+        result = result.multiply(baseBI);
+        
+        result = result.add(digit);
+
+        current = current.next;
+    }
+    
+    return result;
+}
+    
     public void saveList(File file) {
-        // TODO Auto-generated method stub
+       try (PrintWriter pw = new PrintWriter(file)) {
+            pw.print(toDecimalString());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-
-    /**
-     * Returns student's record book number, which has 4 decimal digits.
-     *
-     * @return student's record book number.
-     */
     public static int getRecordBookNumber() {
-        // TODO Auto-generated method stub
-        return 0;
+        return 19;
     }
 
-
-    /**
-     * Returns new <tt>NumberListImpl</tt> which represents the same number
-     * in other scale of notation, defined by personal test assignment.<p>
-     *
-     * Does not impact the original list.
-     *
-     * @return <tt>NumberListImpl</tt> in other scale of notation.
-     */
     public NumberListImpl changeScale() {
-        // TODO Auto-generated method stub
-        return null;
+        BigInteger decimal = toDecimalBigInteger();
+        int targetBase = (this.base == MAIN_BASE) ? ADDITIONAL_BASE : MAIN_BASE;
+        this.base = targetBase; 
+        NumberListImpl result = new NumberListImpl();
+        result.fromDecimalBigInteger(decimal, targetBase); 
+        return result;
     }
 
 
-    /**
-     * Returns new <tt>NumberListImpl</tt> which represents the result of
-     * additional operation, defined by personal test assignment.<p>
-     *
-     * Does not impact the original list.
-     *
-     * @param arg - second argument of additional operation
-     *
-     * @return result of additional operation.
-     */
+
     public NumberListImpl additionalOperation(NumberList arg) {
-        // TODO Auto-generated method stub
-        return null;
+        BigInteger a = this.toDecimalBigInteger();
+        BigInteger b = ((NumberListImpl) arg).toDecimalBigInteger();
+        BigInteger r = a.and(b);
+
+        NumberListImpl result = new NumberListImpl();
+        result.fromDecimalBigInteger(r, MAIN_BASE);
+        return result;
     }
 
-
-    /**
-     * Returns string representation of number, stored in the list
-     * in <b>decimal</b> scale of notation.
-     *
-     * @return string representation in <b>decimal</b> scale.
-     */
     public String toDecimalString() {
-        // TODO Auto-generated method stub
-        return null;
+        return toDecimalBigInteger().toString();
     }
 
 
     @Override
     public String toString() {
-        // TODO Auto-generated method stub
-        return null;
+        StringBuilder sb = new StringBuilder();
+        Node curr = head;
+        for (int i = 0; i < size; i++) {
+            sb.append(Integer.toHexString(curr.value).toUpperCase());
+            curr = curr.next;
+        }
+        return sb.toString();
     }
 
 
     @Override
     public boolean equals(Object o) {
-        // TODO Auto-generated method stub
-        return false;
+        if (this == o) return true;
+        if (!(o instanceof List)) return false;
+
+        List<?> other = (List<?>) o;
+        if (other.size() != size) return false;
+
+        Iterator<?> it = other.iterator();
+        for (int i = 0; i < size; i++) {
+            if (!get(i).equals(it.next())) return false;
+        }
+        return true;
     }
 
 
     @Override
     public int size() {
-        // TODO Auto-generated method stub
-        return 0;
+        return size;
     }
 
 
     @Override
     public boolean isEmpty() {
-        // TODO Auto-generated method stub
-        return false;
+         return size == 0;
     }
 
 
     @Override
     public boolean contains(Object o) {
-        // TODO Auto-generated method stub
-        return false;
+        return indexOf(o) >= 0;
     }
 
 
     @Override
     public Iterator<Byte> iterator() {
-        // TODO Auto-generated method stub
-        return null;
+        return new Iterator<>() {
+            int i = 0;
+
+            @Override
+            public boolean hasNext() {
+                return i < size;
+            }
+
+            @Override
+            public Byte next() {
+                return get(i++);
+            }
+        };
     }
 
 
     @Override
     public Object[] toArray() {
-        // TODO Auto-generated method stub
-        return null;
+        Object[] arr = new Object[size];
+        for (int i = 0; i < size; i++) {
+            arr[i] = get(i);
+        }
+        return arr;
     }
 
 
     @Override
     public <T> T[] toArray(T[] a) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean add(Byte e) {
-        // TODO Auto-generated method stub
-        return false;
+        if (e == null || e < 0 || e >= MAIN_BASE)
+            throw new IllegalArgumentException("Invalid digit");
+
+        Node node = new Node(e);
+        if (head == null) {
+            head = node;
+            node.next = head;
+        } else {
+            Node last = getNode(size - 1);
+            last.next = node;
+            node.next = head;
+        }
+        size++;
+        return true;
     }
 
 
     @Override
     public boolean remove(Object o) {
-        // TODO Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        // TODO Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean addAll(Collection<? extends Byte> c) {
-        // TODO Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean addAll(int index, Collection<? extends Byte> c) {
-        // TODO Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        // TODO Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        // TODO Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public void clear() {
-        // TODO Auto-generated method stub
-
+        head = null;
+        size = 0;
     }
 
 
     @Override
     public Byte get(int index) {
-        // TODO Auto-generated method stub
-        return null;
+       return getNode(index).value;
     }
+    
+    private Node getNode(int index) {
+           if (index < 0 || index >= size) 
+               throw new IndexOutOfBoundsException();
+           
+           Node curr = head;
+           for (int i = 0; i < index; i++) {
+            curr = curr.next;
+        }
+        return curr;
+       }
 
 
     @Override
     public Byte set(int index, Byte element) {
-        // TODO Auto-generated method stub
-        return null;
+        if (element == null || element < 0 || element >= MAIN_BASE)
+            throw new IllegalArgumentException();
+
+        Node node = getNode(index);
+        Byte old = node.value;
+        node.value = element;
+        return old;
     }
 
 
     @Override
     public void add(int index, Byte element) {
-        // TODO Auto-generated method stub
+        if (element == null || element < 0 || element >= MAIN_BASE)
+            throw new IllegalArgumentException();
 
+        if (index < 0 || index > size)
+            throw new IndexOutOfBoundsException();
+
+        Node node = new Node(element);
+
+        if (index == 0) {
+            if (head == null) {
+                head = node;
+                node.next = head;
+            } else {
+                Node last = getNode(size - 1);
+                node.next = head;
+                head = node;
+                last.next = head;
+            }
+        } else {
+            Node prev = getNode(index - 1);
+            node.next = prev.next;
+            prev.next = node;
+        }
+        size++;
     }
 
 
     @Override
     public Byte remove(int index) {
-        // TODO Auto-generated method stub
-        return null;
+        if (index < 0 || index >= size)
+            throw new IndexOutOfBoundsException();
+
+        Byte removed;
+        if (index == 0) {
+            removed = head.value;
+            if (size == 1) {
+                head = null;
+            } else {
+                Node last = getNode(size - 1);
+                head = head.next;
+                last.next = head;
+            }
+        } else {
+            Node prev = getNode(index - 1);
+            removed = prev.next.value;
+            prev.next = prev.next.next;
+        }
+        size--;
+        return removed;   
     }
 
 
     @Override
     public int indexOf(Object o) {
-        // TODO Auto-generated method stub
-        return 0;
+        Node curr = head;
+        for (int i = 0; i < size; i++) {
+            if (curr.value.equals(o)) return i;
+            curr = curr.next;
+        }
+        return -1;
     }
 
 
     @Override
     public int lastIndexOf(Object o) {
-        // TODO Auto-generated method stub
-        return 0;
+        return indexOf(o);
     }
 
 
     @Override
     public ListIterator<Byte> listIterator() {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public ListIterator<Byte> listIterator(int index) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public List<Byte> subList(int fromIndex, int toIndex) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public boolean swap(int index1, int index2) {
-        // TODO Auto-generated method stub
-        return false;
+        if (index1 < 0 || index2 < 0 || index1 >= size || index2 >= size)
+            return false;
+
+        Node a = getNode(index1);
+        Node b = getNode(index2);
+
+        Byte tmp = a.value;
+        a.value = b.value;
+        b.value = tmp;
+        return true;
     }
 
 
     @Override
     public void sortAscending() {
-        // TODO Auto-generated method stub
+       for (int i = 0; i < size; i++)
+            for (int j = i + 1; j < size; j++)
+                if (get(i) > get(j))
+                    swap(i, j);
     }
 
 
     @Override
     public void sortDescending() {
-        // TODO Auto-generated method stub
+        for (int i = 0; i < size; i++)
+            for (int j = i + 1; j < size; j++)
+                if (get(i) < get(j))
+                    swap(i, j);
     }
 
 
     @Override
     public void shiftLeft() {
-        // TODO Auto-generated method stub
-
+        if (size > 1) {
+            head = head.next;
+        }
     }
 
 
     @Override
     public void shiftRight() {
-        // TODO Auto-generated method stub
-
+        if (size > 1) {
+        Node prevLast = getNode(size - 2);
+        Node last = prevLast.next;
+        prevLast.next = head;
+        head = last;
+        }
     }
 }
