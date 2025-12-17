@@ -141,7 +141,6 @@ public class NumberListImpl implements NumberList {
     public NumberListImpl changeScale() {
         BigInteger decimal = toDecimalBigInteger();
         int targetBase = (this.base == MAIN_BASE) ? ADDITIONAL_BASE : MAIN_BASE;
-        this.base = targetBase; 
         NumberListImpl result = new NumberListImpl();
         result.fromDecimalBigInteger(decimal, targetBase); 
         return result;
@@ -246,7 +245,7 @@ public class NumberListImpl implements NumberList {
 
     @Override
     public boolean add(Byte e) {
-        if (e == null || e < 0 || e >= MAIN_BASE)
+        if (e == null || e < 0 || e >= this.base)
             throw new IllegalArgumentException("Invalid digit");
 
         Node node = new Node(e);
@@ -265,37 +264,102 @@ public class NumberListImpl implements NumberList {
 
     @Override
     public boolean remove(Object o) {
-        throw new UnsupportedOperationException();
+        int index = indexOf(o);
+        if (index >= 0) {
+            remove(index);
+            return true;
+        }
+        return false;
     }
 
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
+        for (Object element : c) {
+        if (!contains(element)) {
+            return false;
+            }
+        }
+        return true;
     }
 
 
     @Override
     public boolean addAll(Collection<? extends Byte> c) {
-        throw new UnsupportedOperationException();
+        return addAll(size, c);
     }
 
 
     @Override
     public boolean addAll(int index, Collection<? extends Byte> c) {
-        throw new UnsupportedOperationException();
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        if (c == null || c.isEmpty()) {
+            return false;
+        }
+        for (Byte element : c) {
+            if (element == null || element < 0 || element >= this.base) {
+                throw new IllegalArgumentException("Invalid digit for base " + this.base);
+            }
+        }
+        boolean modified = false;
+        int currentIndex = index;
+        for (Byte element : c) {
+            add(currentIndex++, element); 
+            modified = true;
+        }
+        return modified;
     }
+
 
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
+        boolean modified = false;
+        Iterator<Byte> it = iterator();
+        while (it.hasNext()) {
+            Byte element = it.next();
+            if (c.contains(element)) {
+                int index = indexOf(element); 
+                if (index >= 0) {
+                    remove(index);
+                    modified = true;
+                    return removeAllByIndexing(c); 
+                }
+            }
+        }
+        return modified; 
     }
+    
+    private boolean removeAllByIndexing(Collection<?> c) {
+        boolean modified = false;
+        for (int i = 0; i < size; ) {
+            if (c.contains(get(i))) {
+                remove(i);
+                modified = true;
+            } else {
+                i++;
+            }
+        }
+        return modified;
+    }
+
 
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
+        boolean modified = false;
+        for (int i = 0; i < size; ) {
+            if (!c.contains(get(i))) {
+                remove(i);
+                modified = true;
+               
+            } else {
+                i++;
+            }
+        }
+        return modified;
     }
 
 
@@ -325,7 +389,7 @@ public class NumberListImpl implements NumberList {
 
     @Override
     public Byte set(int index, Byte element) {
-        if (element == null || element < 0 || element >= MAIN_BASE)
+        if (element == null || element < 0 || element >= this.base)
             throw new IllegalArgumentException();
 
         Node node = getNode(index);
@@ -337,7 +401,7 @@ public class NumberListImpl implements NumberList {
 
     @Override
     public void add(int index, Byte element) {
-        if (element == null || element < 0 || element >= MAIN_BASE)
+        if (element == null || element < 0 || element >= this.base)
             throw new IllegalArgumentException();
 
         if (index < 0 || index > size)
@@ -420,7 +484,15 @@ public class NumberListImpl implements NumberList {
 
     @Override
     public List<Byte> subList(int fromIndex, int toIndex) {
-        throw new UnsupportedOperationException();
+        if (fromIndex < 0 || toIndex > size || fromIndex > toIndex) {
+         throw new IndexOutOfBoundsException();
+     }
+     
+     NumberListImpl sublist = new NumberListImpl();
+     for (int i = fromIndex; i < toIndex; i++) {
+         sublist.add(get(i));
+     }
+     return sublist;
     }
 
 
